@@ -76,7 +76,7 @@ public class SomeService extends Service {
         new TimerTask() {
           @Override
           public void run() {
-            Log.d(TAG, "run " + mCounter);
+            Log.d(TAG, "TimerTask.run: mCounter = " + mCounter);
 
             mCounter++;
 

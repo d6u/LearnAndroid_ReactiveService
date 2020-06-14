@@ -10,9 +10,11 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
-import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
+import java.lang.ref.WeakReference;
 
 class ServiceClient {
 
@@ -20,25 +22,27 @@ class ServiceClient {
 
   static final String KEY_COUNTER = "KEY_COUNTER";
 
-  private static final String TAG = ServiceClient.class.getSimpleName();
+  // private static final String TAG = ServiceClient.class.getSimpleName();
 
   private static class SomeHandler extends Handler {
 
+    private final WeakReference<ServiceClient> mServiceClient;
+
+    SomeHandler(ServiceClient serviceClient) {
+      mServiceClient = new WeakReference<>(serviceClient);
+    }
+
     @Override
     public void handleMessage(@NonNull Message msg) {
-      switch (msg.what) {
-        case COUNTER_UPDATE:
-          {
-            Bundle bundle = msg.getData();
-            int counter = bundle.getInt(KEY_COUNTER);
-            Log.d(TAG, "counter = " + counter);
-            break;
-          }
-        default:
-          {
-            super.handleMessage(msg);
-            break;
-          }
+      if (msg.what == COUNTER_UPDATE) {
+        Bundle bundle = msg.getData();
+        int counter = bundle.getInt(KEY_COUNTER);
+        ServiceClient serviceClient = mServiceClient.get();
+        if (serviceClient != null) {
+          serviceClient.mPublishSubject.onNext(counter);
+        }
+      } else {
+        super.handleMessage(msg);
       }
     }
   }
@@ -48,8 +52,9 @@ class ServiceClient {
   }
 
   private Context mContext;
+  private PublishSubject<Integer> mPublishSubject = PublishSubject.create();
   @Nullable private Messenger mServiceMessenger;
-  @Nullable private Messenger mClientMessenger = new Messenger(new SomeHandler());
+  @Nullable private Messenger mClientMessenger = new Messenger(new SomeHandler(this));
 
   private ServiceConnection mConnection =
       new ServiceConnection() {
@@ -80,12 +85,9 @@ class ServiceClient {
         }
       };
 
-  void subscribeService() {
+  Observable<Integer> getCounter() {
     mContext.bindService(
         new Intent(mContext, SomeService.class), mConnection, Context.BIND_AUTO_CREATE);
-  }
-
-  void unsubscribeService() {
-    mContext.unbindService(mConnection);
+    return mPublishSubject;
   }
 }
