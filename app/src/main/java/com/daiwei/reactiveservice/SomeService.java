@@ -1,27 +1,30 @@
 package com.daiwei.reactiveservice;
 
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.RemoteException;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class SomeService extends Service {
 
-  static private final String TAG = SomeService.class.getSimpleName();
+  private static final String TAG = SomeService.class.getSimpleName();
 
   static final int MSG_SUB = 1;
 
   static class IncomingHandler extends Handler {
-    private Context mContext;
+    private SomeService mService;
 
-    IncomingHandler(Context context) {
-      mContext = context;
+    IncomingHandler(SomeService service) {
+      mService = service;
     }
 
     @Override
@@ -29,6 +32,8 @@ public class SomeService extends Service {
       switch (msg.what) {
         case MSG_SUB:
           Log.d(TAG, "MSG_SUB");
+          mService.mClient = msg.replyTo;
+
           break;
         default:
           super.handleMessage(msg);
@@ -37,17 +42,42 @@ public class SomeService extends Service {
   }
 
   @Nullable Messenger mMessenger;
+  @Nullable Timer mTimer;
+  private int mCounter = 0;
+  @Nullable private Messenger mClient;
 
   @Override
   public void onCreate() {
     super.onCreate();
     Log.d(TAG, "onCreate");
+
+    mTimer = new Timer();
+    mTimer.scheduleAtFixedRate(
+        new TimerTask() {
+          @Override
+          public void run() {
+            Log.d(TAG, "run " + mCounter);
+            mCounter++;
+
+            if (mClient != null) {
+              Message message = Message.obtain(null, 123);
+              try {
+                mClient.send(message);
+              } catch (RemoteException e) {
+                e.printStackTrace();
+              }
+            }
+          }
+        },
+        0,
+        1000);
+
+    mMessenger = new Messenger(new IncomingHandler(this));
   }
 
   @Override
   public IBinder onBind(Intent intent) {
-    mMessenger = new Messenger(new IncomingHandler(this));
-    return mMessenger.getBinder();
+    return Objects.requireNonNull(mMessenger).getBinder();
   }
 
   @Override
