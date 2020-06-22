@@ -13,7 +13,8 @@ import android.os.RemoteException;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.PublishSubject;
+import io.reactivex.rxjava3.subjects.BehaviorSubject;
+import io.reactivex.rxjava3.subjects.Subject;
 import java.lang.ref.WeakReference;
 
 class ServiceClient {
@@ -52,7 +53,7 @@ class ServiceClient {
   }
 
   private Context mContext;
-  private PublishSubject<Integer> mPublishSubject = PublishSubject.create();
+  private Subject<Integer> mPublishSubject = BehaviorSubject.create();
   @Nullable private Messenger mServiceMessenger;
   @Nullable private Messenger mClientMessenger = new Messenger(new SomeHandler(this));
 
