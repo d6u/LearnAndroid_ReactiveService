@@ -62,7 +62,7 @@ public class SomeService extends Service {
 
   @Nullable Messenger mMessenger;
   @Nullable Timer mTimer;
-  private int mCounter = 0;
+  private Counter mCounter = new Counter();
   final Set<Messenger> mClients = new HashSet<>();
 
   @Override
@@ -76,14 +76,14 @@ public class SomeService extends Service {
         new TimerTask() {
           @Override
           public void run() {
-            Log.d(TAG, "TimerTask.run: mCounter = " + mCounter);
+            Log.d(TAG, "TimerTask.run: mCounter = " + mCounter.getCount());
 
-            mCounter++;
+            mCounter.setCount(mCounter.getCount() + 1);
 
             for (Messenger client : mClients) {
               Message message = Message.obtain(null, ServiceClient.COUNTER_UPDATE);
               Bundle bundle = new Bundle();
-              bundle.putInt(ServiceClient.KEY_COUNTER, mCounter);
+              bundle.putParcelable(ServiceClient.KEY_COUNTER, mCounter);
               message.setData(bundle);
               try {
                 client.send(message);

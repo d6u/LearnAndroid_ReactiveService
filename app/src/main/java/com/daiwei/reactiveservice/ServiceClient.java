@@ -37,7 +37,7 @@ class ServiceClient {
     public void handleMessage(@NonNull Message msg) {
       if (msg.what == COUNTER_UPDATE) {
         Bundle bundle = msg.getData();
-        int counter = bundle.getInt(KEY_COUNTER);
+        Counter counter = bundle.getParcelable(KEY_COUNTER);
         ServiceClient serviceClient = mServiceClient.get();
         if (serviceClient != null) {
           serviceClient.mPublishSubject.onNext(counter);
@@ -53,7 +53,7 @@ class ServiceClient {
   }
 
   private Context mContext;
-  private Subject<Integer> mPublishSubject = BehaviorSubject.create();
+  private Subject<Counter> mPublishSubject = BehaviorSubject.create();
   @Nullable private Messenger mServiceMessenger;
   @Nullable private Messenger mClientMessenger = new Messenger(new SomeHandler(this));
 
@@ -86,7 +86,7 @@ class ServiceClient {
         }
       };
 
-  Observable<Integer> getCounter() {
+  Observable<Counter> getCounter() {
     mContext.bindService(
         new Intent(mContext, SomeService.class), mConnection, Context.BIND_AUTO_CREATE);
     return mPublishSubject;

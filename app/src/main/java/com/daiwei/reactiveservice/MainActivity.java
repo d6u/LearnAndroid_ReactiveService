@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
           .getCounter()
           .observeOn(AndroidSchedulers.mainThread())
           .subscribe(
-              counter -> Log.d(TAG, "The counter is " + counter));
+              counter -> Log.d(TAG, "The counter is " + counter.getCount()));
     }
   }
 
