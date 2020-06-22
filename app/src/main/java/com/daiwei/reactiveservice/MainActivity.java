@@ -2,10 +2,14 @@ package com.daiwei.reactiveservice;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ViewGroup;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
+import com.daiwei.reactiveservice.databinding.ActivityMainBinding;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -13,13 +17,20 @@ public class MainActivity extends AppCompatActivity {
 
   @Nullable private ServiceClient mServiceClient;
   @Nullable private Disposable mDisposable;
+  @Nullable private CounterViewModel mCounterViewModel;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     Log.d(TAG, "onCreate");
 
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_main);
+
+    final ActivityMainBinding binding =
+        ActivityMainBinding.inflate(getLayoutInflater(), findViewById(android.R.id.content), true);
+    binding.setLifecycleOwner(this);
+
+    mCounterViewModel = new ViewModelProvider(this).get(CounterViewModel.class);
+    binding.setLiveDataCount(mCounterViewModel);
 
     mServiceClient = new ServiceClient(getApplicationContext());
   }
@@ -28,12 +39,17 @@ public class MainActivity extends AppCompatActivity {
   protected void onStart() {
     Log.d(TAG, "onStart");
     super.onStart();
+
     if (mServiceClient != null) {
-      mDisposable = mServiceClient
-          .getCounter()
-          .observeOn(AndroidSchedulers.mainThread())
-          .subscribe(
-              counter -> Log.d(TAG, "The counter is " + counter.getCount()));
+      mDisposable =
+          mServiceClient
+              .getCounter()
+              .observeOn(AndroidSchedulers.mainThread())
+              .subscribe(
+                  counter ->
+                      Objects.requireNonNull(mCounterViewModel)
+                          .getCount()
+                          .setValue(counter.getCount()));
     }
   }
 
