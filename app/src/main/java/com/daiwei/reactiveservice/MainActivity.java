@@ -1,13 +1,17 @@
 package com.daiwei.reactiveservice;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import com.daiwei.reactiveservice.databinding.ActivityMainBinding;
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
@@ -16,7 +20,10 @@ public class MainActivity extends AppCompatActivity {
 
   @Nullable private ServiceClient mServiceClient;
   @Nullable private Disposable mDisposable;
-  @Nullable private CounterViewModel mCounterViewModel;
+  private RecyclerView mRecyclerView;
+  private RecyclerView.Adapter mAdapter;
+  private boolean mIsRecyclerViewLoading;
+  private ArrayList<String> mDataList = new ArrayList<>();
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -30,41 +37,72 @@ public class MainActivity extends AppCompatActivity {
         ActivityMainBinding.inflate(getLayoutInflater(), findViewById(android.R.id.content), true);
     binding.setLifecycleOwner(this);
 
-    mCounterViewModel = new ViewModelProvider(this).get(CounterViewModel.class);
-    binding.setCounterViewModel(mCounterViewModel);
+    mRecyclerView = binding.recyclerView;
+    mRecyclerView.setHasFixedSize(true);
+
+    mDataList.addAll(Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i"));
+
+    mAdapter = new MyRecyclerViewAdapter(mDataList);
+    mRecyclerView.setAdapter(mAdapter);
   }
 
   @Override
   protected void onStart() {
-    Log.d(TAG, "onStart");
     super.onStart();
 
-    if (mServiceClient != null) {
-      mDisposable =
-          mServiceClient
-              .getCounter()
-              .observeOn(AndroidSchedulers.mainThread())
-              .subscribe(
-                  counter ->
-                      Objects.requireNonNull(mCounterViewModel)
-                          .getCount()
-                          .setValue(counter.getCount()));
-    }
+    Log.d(TAG, "onStart");
+
+    mRecyclerView.addOnScrollListener(
+        new RecyclerView.OnScrollListener() {
+          @Override
+          public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+            super.onScrolled(recyclerView, dx, dy);
+
+            LinearLayoutManager linearLayoutManager =
+                (LinearLayoutManager) Objects.requireNonNull(recyclerView.getLayoutManager());
+
+            if (!mIsRecyclerViewLoading
+                && linearLayoutManager.findLastCompletelyVisibleItemPosition()
+                    == mDataList.size() - 1) {
+              mIsRecyclerViewLoading = true;
+              loadMore();
+            }
+          }
+        });
+  }
+
+  private void loadMore() {
+    Log.d(TAG, "loadmore");
+
+    Handler handler = new Handler();
+    handler.postDelayed(
+        () -> {
+          int start = mDataList.size();
+          mDataList.addAll(Arrays.asList("j", "k", "l", "m"));
+          mAdapter.notifyItemRangeInserted(start, 4);
+          mIsRecyclerViewLoading = false;
+        },
+        1000);
   }
 
   @Override
   protected void onStop() {
     Log.d(TAG, "onStop");
+
+    mRecyclerView.clearOnScrollListeners();
+
     super.onStop();
-    if (mDisposable != null) {
-      mDisposable.dispose();
-      mDisposable = null;
-    }
   }
 
   @Override
   protected void onDestroy() {
     Log.d(TAG, "onDestroy");
+
+    if (mDisposable != null) {
+      mDisposable.dispose();
+      mDisposable = null;
+    }
+
     super.onDestroy();
   }
 }
