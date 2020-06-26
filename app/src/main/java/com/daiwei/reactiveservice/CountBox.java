@@ -27,13 +27,13 @@ final class CountBox implements Parcelable {
   private int mCount = 0;
 
   @Override
-  public void writeToParcel(Parcel dest, int flags) {
-    dest.writeInt(mCount);
+  public int describeContents() {
+    return 0;
   }
 
   @Override
-  public int describeContents() {
-    return 0;
+  public void writeToParcel(Parcel dest, int flags) {
+    dest.writeInt(mCount);
   }
 
   int getCount() {

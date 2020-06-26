@@ -19,19 +19,13 @@ import java.lang.ref.WeakReference;
 
 class ServiceClient {
 
-  static final int COUNTER_UPDATE = 0;
-
-  static final String KEY_COUNTER = "KEY_COUNTER";
-
-  // private static final String TAG = ServiceClient.class.getSimpleName();
-
   private static class SomeHandler extends Handler {
-
-    private final WeakReference<ServiceClient> mServiceClient;
 
     SomeHandler(ServiceClient serviceClient) {
       mServiceClient = new WeakReference<>(serviceClient);
     }
+
+    private final WeakReference<ServiceClient> mServiceClient;
 
     @Override
     public void handleMessage(@NonNull Message msg) {
@@ -40,7 +34,7 @@ class ServiceClient {
         Counter counter = bundle.getParcelable(KEY_COUNTER);
         ServiceClient serviceClient = mServiceClient.get();
         if (serviceClient != null) {
-          serviceClient.mPublishSubject.onNext(counter);
+          serviceClient.mCounterSubject.onNext(counter);
         }
       } else {
         super.handleMessage(msg);
@@ -48,14 +42,23 @@ class ServiceClient {
     }
   }
 
+  static final int COUNTER_UPDATE = 0;
+  static final String KEY_COUNTER = "KEY_COUNTER";
+
   ServiceClient(Context context) {
     mContext = context;
+    bindService();
+  }
+
+  private void bindService() {
+    mContext.bindService(
+        new Intent(mContext, SomeService.class), mConnection, Context.BIND_AUTO_CREATE);
   }
 
   private Context mContext;
-  private Subject<Counter> mPublishSubject = BehaviorSubject.create();
+  private Subject<Counter> mCounterSubject = BehaviorSubject.create();
   @Nullable private Messenger mServiceMessenger;
-  @Nullable private Messenger mClientMessenger = new Messenger(new SomeHandler(this));
+  @Nullable private Messenger mReceivingMessenger = new Messenger(new SomeHandler(this));
 
   private ServiceConnection mConnection =
       new ServiceConnection() {
@@ -64,7 +67,7 @@ class ServiceClient {
           mServiceMessenger = new Messenger(binder);
 
           Message message = Message.obtain(null, SomeService.SUB_TO_SERVICE);
-          message.replyTo = mClientMessenger;
+          message.replyTo = mReceivingMessenger;
 
           try {
             mServiceMessenger.send(message);
@@ -76,7 +79,7 @@ class ServiceClient {
         @Override
         public void onServiceDisconnected(ComponentName name) {
           Message message = Message.obtain(null, SomeService.UNSUB_TO_SERVICE);
-          message.replyTo = mClientMessenger;
+          message.replyTo = mReceivingMessenger;
 
           try {
             mServiceMessenger.send(message);
@@ -87,8 +90,6 @@ class ServiceClient {
       };
 
   Observable<Counter> getCounter() {
-    mContext.bindService(
-        new Intent(mContext, SomeService.class), mConnection, Context.BIND_AUTO_CREATE);
-    return mPublishSubject;
+    return mCounterSubject;
   }
 }

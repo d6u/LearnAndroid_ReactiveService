@@ -2,7 +2,6 @@ package com.daiwei.reactiveservice;
 
 import android.os.Bundle;
 import android.util.Log;
-import android.view.ViewGroup;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
@@ -21,18 +20,18 @@ public class MainActivity extends AppCompatActivity {
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+
     Log.d(TAG, "onCreate");
 
-    super.onCreate(savedInstanceState);
+    mServiceClient = new ServiceClient(getApplicationContext());
 
     final ActivityMainBinding binding =
         ActivityMainBinding.inflate(getLayoutInflater(), findViewById(android.R.id.content), true);
     binding.setLifecycleOwner(this);
 
     mCounterViewModel = new ViewModelProvider(this).get(CounterViewModel.class);
-    binding.setLiveDataCount(mCounterViewModel);
-
-    mServiceClient = new ServiceClient(getApplicationContext());
+    binding.setCounterViewModel(mCounterViewModel);
   }
 
   @Override
