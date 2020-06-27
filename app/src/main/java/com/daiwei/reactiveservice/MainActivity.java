@@ -21,7 +21,7 @@ public class MainActivity extends AppCompatActivity {
   @Nullable private ServiceClient mServiceClient;
   @Nullable private Disposable mDisposable;
   private RecyclerView mRecyclerView;
-  private RecyclerView.Adapter mAdapter;
+  private MyRecyclerViewAdapter mAdapter;
   private boolean mIsRecyclerViewLoading;
   private ArrayList<ITableCell> mDataList = new ArrayList<>();
 
@@ -52,7 +52,8 @@ public class MainActivity extends AppCompatActivity {
             new Item("h"),
             new Item("i")));
 
-    mAdapter = new MyRecyclerViewAdapter(mDataList);
+    mAdapter = new MyRecyclerViewAdapter();
+    mAdapter.submitList(mDataList);
     mRecyclerView.setAdapter(mAdapter);
   }
 
@@ -82,20 +83,19 @@ public class MainActivity extends AppCompatActivity {
   }
 
   private void loadMore() {
-    mDataList.add(new LoadingItem());
-    mAdapter.notifyItemInserted(mDataList.size());
+    ArrayList<ITableCell> list1 = new ArrayList<>(mDataList);
+    list1.add(new LoadingItem());
+    mDataList = list1;
+    mAdapter.submitList(list1);
 
     Handler handler = new Handler();
     handler.postDelayed(
         () -> {
-          int start = mDataList.size() - 1;
-
-          mDataList.remove(start);
-          mAdapter.notifyItemRemoved(start);
-
-          mDataList.addAll(
-              Arrays.asList(new Item("j"), new Item("k"), new Item("l"), new Item("m")));
-          mAdapter.notifyItemRangeInserted(start, 4);
+          ArrayList<ITableCell> list2 = new ArrayList<>(mDataList);
+          list2.remove(list2.size() - 1);
+          list2.addAll(Arrays.asList(new Item("j"), new Item("k"), new Item("l"), new Item("m")));
+          mDataList = list2;
+          mAdapter.submitList(list2);
 
           mIsRecyclerViewLoading = false;
         },
