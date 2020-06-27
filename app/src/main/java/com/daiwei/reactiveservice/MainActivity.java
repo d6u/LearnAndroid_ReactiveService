@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
   private RecyclerView mRecyclerView;
   private RecyclerView.Adapter mAdapter;
   private boolean mIsRecyclerViewLoading;
-  private ArrayList<String> mDataList = new ArrayList<>();
+  private ArrayList<ITableCell> mDataList = new ArrayList<>();
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -40,7 +40,17 @@ public class MainActivity extends AppCompatActivity {
     mRecyclerView = binding.recyclerView;
     mRecyclerView.setHasFixedSize(true);
 
-    mDataList.addAll(Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i"));
+    mDataList.addAll(
+        Arrays.asList(
+            new Item("a"),
+            new Item("b"),
+            new Item("c"),
+            new Item("d"),
+            new Item("e"),
+            new Item("f"),
+            new Item("g"),
+            new Item("h"),
+            new Item("i")));
 
     mAdapter = new MyRecyclerViewAdapter(mDataList);
     mRecyclerView.setAdapter(mAdapter);
@@ -72,14 +82,21 @@ public class MainActivity extends AppCompatActivity {
   }
 
   private void loadMore() {
-    Log.d(TAG, "loadmore");
+    mDataList.add(new LoadingItem());
+    mAdapter.notifyItemInserted(mDataList.size());
 
     Handler handler = new Handler();
     handler.postDelayed(
         () -> {
-          int start = mDataList.size();
-          mDataList.addAll(Arrays.asList("j", "k", "l", "m"));
+          int start = mDataList.size() - 1;
+
+          mDataList.remove(start);
+          mAdapter.notifyItemRemoved(start);
+
+          mDataList.addAll(
+              Arrays.asList(new Item("j"), new Item("k"), new Item("l"), new Item("m")));
           mAdapter.notifyItemRangeInserted(start, 4);
+
           mIsRecyclerViewLoading = false;
         },
         1000);
