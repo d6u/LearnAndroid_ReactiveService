@@ -1,15 +1,18 @@
 package com.daiwei.reactiveservice;
 
+import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewbinding.ViewBinding;
 import com.daiwei.reactiveservice.databinding.LoadingIndicatorBinding;
 import com.daiwei.reactiveservice.databinding.RecyclerCellBinding;
-import java.util.ArrayList;
 
-final class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAdapter.MyViewHolder> {
+public final class MyRecyclerViewAdapter
+    extends ListAdapter<ITableCell, MyRecyclerViewAdapter.MyViewHolder> {
 
   static class MyViewHolder extends RecyclerView.ViewHolder {
     MyViewHolder(ViewBinding binding) {
@@ -20,14 +23,29 @@ final class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAda
     ViewBinding mBinding;
   }
 
+  private static final DiffUtil.ItemCallback<ITableCell> DIFF_CALLBACK =
+      new DiffUtil.ItemCallback<ITableCell>() {
+        @Override
+        public boolean areItemsTheSame(@NonNull ITableCell oldCell, @NonNull ITableCell newCell) {
+          return oldCell == newCell;
+        }
+
+        @SuppressLint("DiffUtilEquals")
+        @Override
+        public boolean areContentsTheSame(
+            @NonNull ITableCell oldCell, @NonNull ITableCell newCell) {
+          // NOTE: if you use equals, your object must properly override Object#equals()
+          // Incorrectly returning false here will result in too many animations.
+          return oldCell == newCell;
+        }
+      };
+
   private static final int REGULAR_ITEM = 0;
   private static final int LOADING_ITEM = 1;
 
-  MyRecyclerViewAdapter(ArrayList<ITableCell> myDataset) {
-    mDataset = myDataset;
+  MyRecyclerViewAdapter() {
+    super(DIFF_CALLBACK);
   }
-
-  private ArrayList<ITableCell> mDataset;
 
   @Override
   public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -46,7 +64,7 @@ final class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAda
 
   @Override
   public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
-    ITableCell cell = mDataset.get(position);
+    ITableCell cell = getItem(position);
     if (cell instanceof Item) {
       ((RecyclerCellBinding) holder.mBinding).setText(((Item) cell).getTitle());
     }
@@ -54,11 +72,6 @@ final class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAda
 
   @Override
   public int getItemViewType(int position) {
-    return mDataset.get(position) instanceof Item ? REGULAR_ITEM : LOADING_ITEM;
-  }
-
-  @Override
-  public int getItemCount() {
-    return mDataset.size();
+    return getItem(position) instanceof Item ? REGULAR_ITEM : LOADING_ITEM;
   }
 }
